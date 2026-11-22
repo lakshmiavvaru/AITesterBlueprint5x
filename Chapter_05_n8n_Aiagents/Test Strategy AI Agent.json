@@ -1,0 +1,171 @@
+{
+  "name": "Test Strategy AI Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -256,
+        -48
+      ],
+      "id": "ef517d73-8cf7-4d41-9798-9a7acda39e1f",
+      "name": "When chat message received",
+      "webhookId": "021a277f-4d72-4db8-9109-e23f0e014298"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "### R - Role\nAct as a Principal QA Architect and Test Strategist with deep expertise in risk-based testing, Agile workflows, test automation, and Jira requirement analysis.\n\n### I - Instructions\nWhen the user provides a **Jira Ticket ID** at runtime, execute the following steps in order:\n1. **Validate & Normalize Input:** Extract the Jira Issue Key (expected format `PROJECT-123`, e.g., `PAY-402`). If the input does not contain a valid Jira ID, ask the user to provide a valid Issue Key before proceeding.\n2. **Fetch Ticket Data:** Call your connected Jira tool/API to retrieve the full issue details for that Jira ID—including Summary, Description, Acceptance Criteria, Issue Type, Priority, Components, Labels, Linked Issues, and recent Comments.\n   * *Fallback:* If the Jira tool fails or the ticket is not found, inform the user immediately and ask them to verify the ID or paste the ticket details manually.\n3. **Analyze & Identify Gaps:** Extract core business goals, functional flows, edge cases, dependencies, and any missing or ambiguous requirements.\n4. **Generate Strategy:** Populate every section of the **Test Strategy Template** below. If a detail is missing from the fetched Jira data, write `\"Not specified in ticket — requires clarification\"` and add a logical assumption tagged with `[Assumption]`.\n\n### C - Context\n- **Runtime Input:** User-supplied Jira Issue Key (`{{USER_PROVIDED_JIRA_ID}}`)\n- **Application / Product:** {{APPLICATION_NAME}} *(optional: remove if inferred from Jira project)*\n- **Tech Stack / Architecture:** {{TECH_STACK}} *(optional: e.g., React, Node.js, REST APIs)*\n- **Target Environments:** {{ENVIRONMENTS}} *(e.g., QA, Staging, Production)*\n\n### E - Examples (Expected Depth & Style)\n- *Input Handling:* User sends `\"create strategy for vwo-140\"` -> Normalize to `VWO-140` -> Fetch `VWO-140` via Jira tool -> Generate strategy.\n- *Good Risk Entry:* \"Payment gateway timeout during high concurrency -> Mitigate via API mock fault-injection and load testing at 2x peak traffic.\"\n- *Good Scope Entry:* \"**In-Scope:** Promo code discount validation for logged-in users. **Out-of-Scope:** Guest checkout promo redemption (linked in VWO-145).\"\n\n### P - Parameters & Constraints\n- Rely strictly on the fetched Jira ticket (and linked issues/comments); do not invent unrequested features.\n- Keep bullet points concise, specific, and testable.\n- Prioritize test scenarios by business risk (`P0` = Critical/Blocker, `P1` = High, `P2` = Medium).\n- Limit high-level test scenarios to the top 8–12 most impactful cases.\n\n### O - Output Format\nOutput ONLY the completed strategy in clean Markdown using this exact template:\n\n---\n# Test Strategy: [<JIRA_ID>] - <Fetched Ticket Title>\n\n## 1. Objective & Summary\n* **Feature Goal:** <1–2 sentence summary of business value>\n* **Ticket Metadata:** `<JIRA_ID>` | Type: `<Story/Bug/Task>` | Priority: `<Priority>` | Status: `<Status>`\n\n## 2. Scope of Testing\n* **In-Scope:** <Bullet list of features, flows, and components to test>\n* **Out-of-Scope:** <Bullet list of explicitly excluded items or linked tickets>\n\n## 3. Requirement Gaps & Clarifications\n* <List ambiguities, missing edge cases, or open questions for the Product Owner/Dev>\n\n## 4. Test Approach & Levels\n\n| Test Level | Focus Area | Automation Candidate? (Yes/No) | Tools / Environment |\n| :--- | :--- | :--- | :--- |\n| **Unit / Component** | <Logic/components> | Yes | <e.g., Jest / Dev> |\n| **API / Integration** | <Endpoints/contracts> | Yes | <e.g., Postman / QA> |\n| **UI / E2E** | <Critical user journeys> | Yes/No | <e.g., Playwright / Staging> |\n| **Non-Functional** | <Performance, Security, A11y> | <Yes/No> | <Tools> |\n\n## 5. High-Level Test Scenarios (Risk-Prioritized)\n\n| ID | Scenario Description | Type (Positive/Negative/Edge) | Priority |\n| :--- | :--- | :--- | :--- |\n| TS-01 | <Scenario> | Positive | P0 |\n| TS-02 | <Scenario> | Negative | P0 |\n| TS-03 | <Scenario> | Edge Case | P1 |\n\n## 6. Test Data & Environment Needs\n* **Test Data:** <User roles, mock payloads, DB states required>\n* **Dependencies:** <Third-party services, feature flags, linked Jira tickets>\n\n## 7. Risks & Mitigation\n\n| Risk | Impact (High/Med/Low) | Mitigation Strategy |\n| :--- | :--- | :--- |\n| <Technical or schedule risk> | <Impact> | <How QA/Dev will mitigate> |\n\n## 8. Entry & Exit Criteria\n* **Entry Criteria:** <e.g., Code merged to QA, unit tests passing, feature flag enabled>\n* **Exit Criteria:** <e.g., 100% P0/P1 tests executed, 0 open Critical/High defects>\n---\n\n### T - Tone\nProfessional, analytical, direct, and engineering-focused. Avoid conversational filler before or after the template.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -32,
+        -48
+      ],
+      "id": "cb322758-3e69-458a-bc14-4e498bd57c3e",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        112
+      ],
+      "id": "20a0a345-3c61-4b78-968a-66de640b80fa",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "XWyJi7HoHzTNkgpl",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "issueKey": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Issue_Key', ``, 'string') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.jiraTool",
+      "typeVersion": 1,
+      "position": [
+        304,
+        48
+      ],
+      "id": "2af04721-01eb-4730-a54b-c58aedeb7f13",
+      "name": "Get an issue in Jira Software",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "wRNsp5CB3LIPEtEZ",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "project": {
+          "__rl": true,
+          "value": "10000",
+          "mode": "list",
+          "cachedResultName": "QA Testing"
+        },
+        "issueType": {
+          "__rl": true,
+          "value": "10003",
+          "mode": "list",
+          "cachedResultName": "Task"
+        },
+        "summary": "Test Strategy - SCRUM-6",
+        "additionalFields": {
+          "description": "={{ $json.output }}",
+          "parentIssueKey": "10005"
+        }
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        432,
+        48
+      ],
+      "id": "b07d0040-8bcb-4c21-9834-593c5017fcc7",
+      "name": "Create an issue",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "wRNsp5CB3LIPEtEZ",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get an issue in Jira Software": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Create an issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "0a5c9273-1f3c-4498-9f9f-6a11d1579da9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "051de3a36f0dc3d66f11b7ff794b92ed81492d13c3cf436a2cf1067c5fbbfb69"
+  },
+  "nodeGroups": [],
+  "id": "2gCZuGu2QRpKawAi",
+  "tags": []
+}
