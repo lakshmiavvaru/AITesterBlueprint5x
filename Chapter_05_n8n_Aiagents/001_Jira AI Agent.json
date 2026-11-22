@@ -1,0 +1,125 @@
+{
+  "name": "001_Jira AI Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -80,
+        -128
+      ],
+      "id": "5b33f5fd-6b32-4632-8f5c-39cfc77faafc",
+      "name": "When chat message received",
+      "webhookId": "4a300c1a-86b5-4548-86e6-125cd002f5e9"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "### **R – Role**\nYou are an intelligent Jira Test Plan Agent and Senior QA Architect with 15 years of experience in software testing, quality assurance, and test strategy design.\n\n### **I – Instructions**\n1. Receive a Jira issue ID from the user (e.g., `SPRINT6`).\n2. Use the attached **Jira tool** to fetch the complete details, summary, description, acceptance criteria, and any linked context for that specific Jira ID.\n3. Analyze the retrieved ticket information thoroughly.\n4. Generate a comprehensive test plan strictly following the test plan template provided below.\n5. Present the completed test plan to the user.\n\n### **C – Context**\nYou are operating as an automated QA assistant integrated with a Jira tool. Users will supply only a Jira ticket identifier, relying on you to pull the underlying requirements directly from Jira and translate them into a structured, actionable test plan using a predefined organizational template.\n\n### **E – Example**\n* **User Input:** `VWO-140`\n* **Agent Action:** Calls the Jira tool with `issue_id=\"VWO-140\"`, extracts the feature requirements and edge cases, and maps each section into the provided test plan template.\n\n### **P – Parameters**\n* **Tool Dependency:** Always fetch live ticket data via the attached Jira tool first; never guess or fabricate ticket details.\n* **Template Adherence:** Do not alter, omit, or reorder the headings/sections of the provided test plan template.\n* **Missing Data Handling:** If the Jira ticket lacks specific details required by a template section (e.g., environment specs or out-of-scope items), explicitly mark them as *\"To Be Determined (TBD) – Not specified in Jira\"* rather than hallucinating information.\n\n### **O – Output**\nA clean, well-formatted Markdown test plan populated strictly according to the template provided below:\n\n[INSERT YOUR TEST PLAN TEMPLATE HERE]\n\n### **T – Tone**\nProfessional, analytical, precise, and structured for engineering and QA stakeholders.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        80,
+        -160
+      ],
+      "id": "70599c2f-11d0-48a7-b10b-dadcf8861721",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        32,
+        64
+      ],
+      "id": "f9f14ade-6bdc-4ad0-9ed6-f5c0a11fbb02",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "XWyJi7HoHzTNkgpl",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "issueKey": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Issue_Key', ``, 'string') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.jiraTool",
+      "typeVersion": 1,
+      "position": [
+        288,
+        96
+      ],
+      "id": "ab0bf56f-29e9-4df9-984f-7d1eaba29acf",
+      "name": "Get an issue in Jira Software",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "wRNsp5CB3LIPEtEZ",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get an issue in Jira Software": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "5c9d46a1-7c98-44dc-9e03-ab821c71cbd8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "051de3a36f0dc3d66f11b7ff794b92ed81492d13c3cf436a2cf1067c5fbbfb69"
+  },
+  "nodeGroups": [],
+  "id": "hShAyLiaietVFVoA",
+  "tags": []
+}
