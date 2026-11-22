@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "src/backend/server.js",
+      "use": "@vercel/node",
+      "config": { "includeFiles": ["src/frontend/**", "src/backend/TestPlan_Template.md"] }
+    }
+  ],
+  "routes": [{ "src": "/(.*)", "dest": "src/backend/server.js" }]
+}

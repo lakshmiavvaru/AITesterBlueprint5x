@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jira Test Plan Generator</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #f4f5f7; color: #172b4d; }
+    nav { background: #fff; border-bottom: 1px solid #ddd; padding: 12px 24px; display: flex; gap: 16px; align-items: center; }
+    nav b { margin-right: auto; }
+    nav button { background: none; border: 0; font-size: 15px; cursor: pointer; padding: 6px 10px; border-radius: 6px; }
+    nav button.on { background: #e9f2ff; color: #0c66e4; }
+    main { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+    .box { background: #fff; border: 2px solid #333; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .reply { min-height: 360px; white-space: pre-wrap; overflow: auto; }
+    .row { display: flex; gap: 8px; }
+    input { flex: 1; padding: 10px; border: 1px solid #aaa; border-radius: 6px; font-size: 15px; width: 100%; box-sizing: border-box; margin: 4px 0 10px; }
+    .row input { margin: 0; }
+    button.go { padding: 10px 18px; background: #0c66e4; color: #fff; border: 0; border-radius: 6px; cursor: pointer; }
+    button.go:disabled { opacity: .6; cursor: wait; }
+    .err { color: #c9372c; } .ok { color: #1f845a; } .muted { color: #6b778c; }
+    label { font-size: 13px; font-weight: 600; }
+    h3 { margin-top: 0; }
+  </style>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    async function api(path, body) {
+      const r = await fetch(path, body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || 'Request failed.');
+      return data;
+    }
+
+    function Main({ settings }) {
+      const [id, setId] = useState('');
+      const [busy, setBusy] = useState(false);
+      const [plan, setPlan] = useState(null);
+      const [error, setError] = useState('');
+
+      async function submit(e) {
+        e.preventDefault();
+        if (busy) return;
+        setBusy(true); setError(''); setPlan(null);
+        try { setPlan(await api('/api/generate', { issueId: id, settings })); }
+        catch (err) { setError(err.message); }
+        finally { setBusy(false); }
+      }
+
+      return (
+        <>
+          <div className="box reply">
+            {busy && <span className="muted">Fetching Jira issue and generating test plan…</span>}
+            {error && <span className="err">{error}</span>}
+            {plan && <>
+              <div className="muted">Source: <a href={plan.issue.url} target="_blank" rel="noreferrer">{plan.issue.key}</a> – {plan.issue.summary}</div>
+              <hr />{plan.plan}
+            </>}
+            {!busy && !error && !plan && <span className="muted">Reply with Test Plan appears here. Enter a Jira ticket below.</span>}
+          </div>
+          <form className="box row" onSubmit={submit}>
+            <input value={id} onChange={e => setId(e.target.value)} placeholder="Prompt (JIRA Ticket), e.g. QA-123" />
+            <button className="go" disabled={busy || !id.trim()}>{busy ? 'Working…' : 'Generate'}</button>
+          </form>
+        </>
+      );
+    }
+
+    function Settings({ onChange }) {
+      const [s, setS] = useState(null);
+      const [f, setF] = useState({ baseUrl: '', email: '', token: '', provider: 'groq', groqKey: '', ollamaUrl: '' });
+      const [msg, setMsg] = useState({});
+
+      useEffect(() => {
+        api('/api/settings').then(d => {
+          setS(d);
+          setF(x => ({ ...x, baseUrl: d.jira.baseUrl, email: d.jira.email, provider: d.llm.provider, ollamaUrl: d.llm.ollamaUrl }));
+        });
+      }, []);
+
+      const set = k => e => setF({ ...f, [k]: e.target.value });
+      // Entered values are kept in React state only (never browser storage) and sent with each request.
+      const overrides = () => ({ jira: { baseUrl: f.baseUrl, email: f.email, token: f.token }, llm: { provider: f.provider, groqKey: f.groqKey, ollamaUrl: f.ollamaUrl } });
+
+      async function test(which) {
+        setMsg({ [which]: { text: 'Testing…' } });
+        try { onChange(overrides()); const r = await api('/api/test/' + which, { settings: overrides() }); setMsg({ [which]: { text: r.message, ok: true } }); }
+        catch (e) { setMsg({ [which]: { text: e.message } }); }
+      }
+      const Msg = ({ k }) => msg[k] ? <div className={msg[k].ok ? 'ok' : msg[k].text === 'Testing…' ? 'muted' : 'err'}>{msg[k].text}</div> : null;
+
+      if (!s) return <div className="muted">Loading…</div>;
+      return (
+        <>
+          <div className="box">
+            <h3>JIRA Connection</h3>
+            <label>URL</label><input value={f.baseUrl} onChange={set('baseUrl')} placeholder="https://your-site.atlassian.net" />
+            <label>Email</label><input value={f.email} onChange={set('email')} />
+            <label>Token</label><input type="password" value={f.token} onChange={set('token')} placeholder={s.jira.hasToken ? '•••••• (configured – leave blank to keep)' : 'API token'} />
+            <button className="go" onClick={() => test('jira')}>Test Connection</button>
+            <Msg k="jira" />
+          </div>
+          <div className="box">
+            <h3>LLM Configuration</h3>
+            <label><input type="radio" style={{ width: 'auto', margin: '0 6px 0 0' }} checked={f.provider === 'ollama'} onChange={() => setF({ ...f, provider: 'ollama' })} />1. Ollama Connection</label>
+            <input value={f.ollamaUrl} onChange={set('ollamaUrl')} disabled={f.provider !== 'ollama'} />
+            <label><input type="radio" style={{ width: 'auto', margin: '0 6px 0 0' }} checked={f.provider === 'groq'} onChange={() => setF({ ...f, provider: 'groq' })} />2. <a href="https://groq.com" target="_blank" rel="noreferrer">Groq.com</a> (API key)</label>
+            <input type="password" value={f.groqKey} onChange={set('groqKey')} disabled={f.provider !== 'groq'} placeholder={s.llm.hasGroqKey ? '•••••• (configured – leave blank to keep)' : 'Groq API key'} />
+            <button className="go" onClick={() => test('llm')}>Test {f.provider === 'groq' ? 'Groq.com' : 'Local LLM'}</button>
+            <Msg k="llm" />
+          </div>
+        </>
+      );
+    }
+
+    function App() {
+      const [tab, setTab] = useState('main');
+      const [overrides, setOverrides] = useState({});
+      return (
+        <>
+          <nav>
+            <b>Jira Test Plan Generator</b>
+            <button className={tab === 'main' ? 'on' : ''} onClick={() => setTab('main')}>Main page</button>
+            <button className={tab === 'settings' ? 'on' : ''} onClick={() => setTab('settings')}>Settings</button>
+          </nav>
+          <main>{tab === 'main' ? <Main settings={overrides} /> : <Settings onChange={setOverrides} />}</main>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

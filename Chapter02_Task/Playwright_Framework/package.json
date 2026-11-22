@@ -1,0 +1,26 @@
+{
+  "name": "vwo-playwright-automation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VWO login automation framework (Playwright + TypeScript + Allure)",
+  "scripts": {
+    "install:browsers": "playwright install",
+    "test": "playwright test",
+    "test:valid": "playwright test tests/login-valid.spec.ts",
+    "test:invalid": "playwright test tests/login-invalid.spec.ts",
+    "test:chromium": "playwright test --project=chromium",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "allure:generate": "allure generate allure-results --clean -o allure-report",
+    "allure:open": "allure open allure-report",
+    "report": "npm run allure:generate && npm run allure:open"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.0.0",
+    "allure-commandline": "^2.32.0",
+    "allure-playwright": "^3.0.0",
+    "dotenv": "^16.4.5",
+    "typescript": "^5.6.0"
+  }
+}
