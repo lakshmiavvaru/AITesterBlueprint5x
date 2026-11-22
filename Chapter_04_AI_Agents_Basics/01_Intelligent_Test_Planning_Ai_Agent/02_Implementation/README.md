@@ -1,5 +1,7 @@
 # Jira Test Plan Generator
 
+**Live app:** https://jira-testplan-generator-nu.vercel.app
+
 Enter a Jira ticket ID. The app reads the issue (read-only), then generates a test plan from `01_Plan/TestPlan_Template.md` using Groq or Ollama.
 
 ## Run
