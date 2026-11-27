@@ -1,0 +1,18 @@
+{
+  "name": "a11y-nvda-axe-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Logs in, then tests each Testurl<N> from .env with axe-core (WCAG 2.2) and NVDA (Guidepup), writing a defect report folder per page.",
+  "scripts": {
+    "setup:nvda": "guidepup-setup",
+    "start": "node run.js",
+    "start:axe-only": "node run.js --no-nvda"
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.10.0",
+    "@guidepup/guidepup": "^0.24.0",
+    "@guidepup/playwright": "^0.14.0",
+    "@guidepup/setup": "^0.17.0",
+    "playwright": "^1.49.0"
+  }
+}

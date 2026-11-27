@@ -1,0 +1,193 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -160,
+        -112
+      ],
+      "id": "4839deac-b6cb-4dc2-82d8-ad2007912864",
+      "name": "When chat message received",
+      "webhookId": "d8e41eba-e524-4389-a41f-15ed7c5d2fab"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "R - Role\nYou are an intelligent Jira Triage and Update Agent for project SCRUM, with 15 years of experience in software testing, defect triage, and risk analysis. You work only from what the ticket says.\n\n### I - Instructions\n1. Accept a Jira issue key from the user, for example `SCRUM-140`. If no key is given, ask for it.\n2. Use the \"Get an issue in Jira Software\" tool to fetch the issue. Never act on an issue you did not fetch.\n3. If the issue is not in project SCRUM, tell the user and stop. Any issue type is allowed (Bug, Task, Story, Subtask).\n\nDecide the mode from the user's request:\n\n**MODE A - Status change** (the user asks to move/set/change status, e.g. \"change status to Done\")\na. Fetch the issue and report its current Status.\nb. Confirm with the user: \"Change <KEY> from <current> to <target>? Reply **yes** to proceed.\"\nc. After \"yes\", call the \"Update an issue in Jira Software\" tool ONCE, setting only Status.\n   Status must be the Jira transition ID, not the name. Use this mapping:\n   - To Do = 11\n   - In Progress = 21\n   - In Review = 31\n   - Done = 41\nd. The update tool rejects empty fields, so also send Priority = the ID of the issue's CURRENT priority (from the fetched issue) so it stays unchanged. Do not send Description.\n\n**MODE B - Priority update** (the user asks to change priority only)\na. Fetch the issue, confirm \"Set <KEY> priority to <value>? Reply **yes**.\"\nb. After \"yes\", call the update tool ONCE with the new Priority, and Status = the transition ID matching the issue's CURRENT status (so status stays unchanged).\n\n**MODE C - Triage** (the user asks to triage/assess, usually Bugs)\na. Read Summary, Description and current Priority.\nb. Decide: Severity (Blocker/Critical/Major/Minor/Trivial), Priority (Highest/High/Medium/Low/Lowest), Risk (High/Medium/Low), Comments (reasoning, impact, questions for the reporter).\nc. Show the Triage Report and end with: \"Reply **yes** to update <KEY>, or tell me what to change.\"\nd. If the user asks for changes, revise and show it again.\ne. Only after an explicit \"yes\" to the latest report, call the update tool ONCE to set Priority to the proposed value and Description to the ORIGINAL description, unchanged, followed by an \"AI Triage\" section.\n\nAfter any update tool call, check the result:\n- If it returned success, reply with what changed and the issue link.\n- If it returned an error, show the error and"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        64,
+        -112
+      ],
+      "id": "71652eba-8b4d-41fb-9e92-75eae80e1574",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -112,
+        144
+      ],
+      "id": "11405fa8-58b2-4674-ade0-deef730ebe2b",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        96,
+        112
+      ],
+      "id": "e6e370c3-47de-4553-83d9-fe2e946a112f",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "issueKey": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Issue_Key', ``, 'string') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.jiraTool",
+      "typeVersion": 1,
+      "position": [
+        320,
+        128
+      ],
+      "id": "da8a0ebb-9c92-471e-9651-3ad34791f5fe",
+      "name": "Get an issue in Jira Software",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "wRNsp5CB3LIPEtEZ",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "issueKey": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Issue_Key', `update severity, cha`, 'string') }}",
+        "updateFields": {
+          "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', ``, 'string') }}",
+          "statusId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Status', ``, 'string') }}",
+            "__regex": "^([0-9]{1,})"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.jiraTool",
+      "typeVersion": 1,
+      "position": [
+        448,
+        32
+      ],
+      "id": "64684323-2c46-4e00-b99f-c65f58b22a48",
+      "name": "Update an issue in Jira Software",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "wRNsp5CB3LIPEtEZ",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get an issue in Jira Software": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update an issue in Jira Software": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "bc656aa0-0e6c-479f-aa2e-ef35dff27a73",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "051de3a36f0dc3d66f11b7ff794b92ed81492d13c3cf436a2cf1067c5fbbfb69"
+  },
+  "nodeGroups": [],
+  "id": "VSyvflpqzM4lRyJp",
+  "tags": []
+}
